@@ -22,7 +22,13 @@
         <label for="precio">Precio</label>
         <input id="precio" type="number" min="0" max="99999999.99" step="0.01" required>
 
-        <button type="submit">Guardar</button><button type="button" id="cancelar" hidden>Cancelar</button>
+                <label>
+          Foto del producto
+          <input type="file" id="imagen" accept="image/jpeg,image/png,image/webp">
+          <span class="error" id="err-imagen"></span>
+        </label>
+        <img id="vista-previa" class="vista-previa" alt="Vista previa de la foto" hidden>
+<button type="submit">Guardar</button><button type="button" id="cancelar" hidden>Cancelar</button>
       </form>
 
       <p id="estado-form"></p>
@@ -55,7 +61,8 @@
           </select>
         </label>
 
-        <button type="submit">Aplicar</button>
+                
+<button type="submit">Aplicar</button>
         <button type="button" id="btn-limpiar">Limpiar</button>
         <button type="button" id="btn-baratos">Mas baratos primero</button>
       </form>
@@ -68,7 +75,7 @@
       <table>
         <thead>
           <tr>
-            <th>ID</th>
+            <th>ID</th><th>Foto</th>
             <th>Nombre</th>
             <th class="derecha">Precio</th><th>Acciones</th>
           </tr>
@@ -86,6 +93,8 @@
   <script src="js/app.js"></script>
 </body>
 </html>
+
+
 
 
 

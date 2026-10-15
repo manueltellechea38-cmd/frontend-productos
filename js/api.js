@@ -1,7 +1,7 @@
 ﻿async function request(url, opciones = {}) {
   const config = { ...opciones };
 
-  if (opciones.body) {
+  if (opciones.body && !(opciones.body instanceof FormData)) {
     config.headers = { "Content-Type": "application/json" };
   }
 
@@ -74,3 +74,16 @@ async function apiEliminar(id) {
   });
 }
 
+
+async function apiSubirImagen(id, archivo) {
+  const datos = new FormData();
+  datos.append("imagen", archivo);
+
+  return await request(
+    IMAGEN_URL + "?id=" + encodeURIComponent(id),
+    {
+      method: "POST",
+      body: datos
+    }
+  );
+}

@@ -96,3 +96,33 @@ button.peligro {
 #cancelar {
   background: #6b7280;
 }
+
+[hidden] {
+  display: none !important;
+}
+
+.miniatura {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #dfe3ec;
+  display: block;
+}
+
+.vista-previa {
+  max-width: 200px;
+  max-height: 200px;
+  margin-top: 12px;
+  border-radius: 8px;
+  border: 1px solid #dfe3ec;
+  display: block;
+}
+
+.error {
+  color: #dc2626;
+}
+
+input.invalido {
+  border-color: #dc2626;
+}
