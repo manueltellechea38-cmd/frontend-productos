@@ -1,8 +1,16 @@
-﻿async function request(url, opciones = {}) {
-  const config = { ...opciones };
+async function request(url, opciones = {}) {
+  const { publico = false, ...resto } = opciones;
+  const config = { ...resto };
+  config.headers = {};
 
-  if (opciones.body && !(opciones.body instanceof FormData)) {
-    config.headers = { "Content-Type": "application/json" };
+  if (resto.body && !(resto.body instanceof FormData)) {
+    config.headers["Content-Type"] = "application/json";
+  }
+
+  const token = obtenerToken();
+
+  if (token && !publico) {
+    config.headers["Authorization"] = "Bearer " + token;
   }
 
   let respuesta;
@@ -10,7 +18,7 @@
   try {
     respuesta = await fetch(url, config);
   } catch (error) {
-    throw new Error("No se pudo conectar con el servidor. Revisa la consola (F12).");
+    throw new Error("No se pudo conectar con el servidor (revisá la consola, F12)");
   }
 
   let datos = null;
@@ -18,13 +26,18 @@
   try {
     datos = await respuesta.json();
   } catch (error) {
-    throw new Error("El servidor no devolvio JSON valido.");
   }
 
   if (!respuesta.ok) {
-    const e = new Error(
-      datos.error || datos.mensaje || "Error HTTP " + respuesta.status
-    );
+    if (respuesta.status === 401 && !publico) {
+      cerrarSesionLocal();
+      window.dispatchEvent(new Event("sesion-vencida"));
+    }
+
+    const mensaje = (datos && (datos.error || datos.mensaje))
+      || "Error HTTP " + respuesta.status;
+
+    const e = new Error(mensaje);
     e.status = respuesta.status;
     throw e;
   }
@@ -84,6 +97,40 @@ async function apiSubirImagen(id, archivo) {
     {
       method: "POST",
       body: datos
+    }
+  );
+}
+
+async function apiRegistro(credenciales) {
+  return await request(REGISTRO_URL, {
+    method: "POST",
+    body: JSON.stringify(credenciales),
+    publico: true
+  });
+}
+
+async function apiLogin(credenciales) {
+  return await request(LOGIN_URL, {
+    method: "POST",
+    body: JSON.stringify(credenciales),
+    publico: true
+  });
+}
+
+async function apiLogout() {
+  return await request(LOGOUT_URL, { method: "POST" });
+}
+
+async function apiListarUsuarios() {
+  return await request(USUARIOS_URL);
+}
+
+async function apiCambiarRol(id, rol) {
+  return await request(
+    USUARIOS_URL + "?id=" + encodeURIComponent(id),
+    {
+      method: "PUT",
+      body: JSON.stringify({ rol: rol })
     }
   );
 }

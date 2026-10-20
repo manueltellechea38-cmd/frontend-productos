@@ -126,3 +126,21 @@ button.peligro {
 input.invalido {
   border-color: #dc2626;
 }
+
+/* ---- Login y roles ---- */
+.contenido { display: grid; gap: 20px; }
+.tarjeta-acceso { max-width: 420px; width: 100%; margin: 0 auto; }
+.fila-1 { grid-template-columns: 1fr; }
+header .usuario { display: flex; align-items: center; gap: 10px; }
+.muted-claro { color: #cbd5e1; font-size: .9rem; }
+.rol {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 600;
+  background: #6b7385;
+  color: #fff;
+}
+.rol[data-rol="editor"] { background: #2563eb; }
+.rol[data-rol="admin"] { background: #dc2626; }
+[hidden] { display: none !important; }

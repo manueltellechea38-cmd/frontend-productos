@@ -1,4 +1,4 @@
-﻿const tbody = document.querySelector("#tabla-body");
+const tbody = document.querySelector("#tabla-body");
 const contador = document.querySelector("#contador");
 const estado = document.querySelector("#estado");
 const formulario = document.querySelector("#form-producto");
@@ -165,10 +165,14 @@ function dibujarTabla(productos) {
   tbody.innerHTML = "";
   contador.textContent = productos.length;
 
+  const puedeEditar = puede("editar");
+  const puedeEliminar = puede("eliminar");
+  const hayAcciones = puedeEditar || puedeEliminar;
+
   if (productos.length === 0) {
     const tr = document.createElement("tr");
     const td = crearCelda("No hay productos para mostrar");
-    td.colSpan = 5;
+    td.colSpan = hayAcciones ? 5 : 4;
     tr.appendChild(td);
     tbody.appendChild(tr);
     return;
@@ -184,21 +188,32 @@ function dibujarTabla(productos) {
       crearCelda("$ " + Number(p.precio).toFixed(2), "derecha")
     );
 
-    const acciones = document.createElement("td");
+    if (hayAcciones) {
+      const acciones = document.createElement("td");
 
-    const editar = document.createElement("button");
-    editar.type = "button";
-    editar.textContent = "Editar";
-    editar.addEventListener("click", () => comenzarEdicion(p));
+      if (puedeEditar) {
+        const editar = document.createElement("button");
+        editar.type = "button";
+        editar.textContent = "Editar";
+        editar.addEventListener("click", () => comenzarEdicion(p));
+        acciones.appendChild(editar);
+      }
 
-    const eliminar = document.createElement("button");
-    eliminar.type = "button";
-    eliminar.textContent = "Eliminar";
-    eliminar.className = "peligro";
-    eliminar.addEventListener("click", () => eliminarProducto(p, eliminar));
+      if (puedeEliminar) {
+        const eliminar = document.createElement("button");
+        eliminar.type = "button";
+        eliminar.textContent = "Eliminar";
+        eliminar.className = "peligro";
+        eliminar.addEventListener(
+          "click",
+          () => eliminarProducto(p, eliminar)
+        );
+        acciones.appendChild(eliminar);
+      }
 
-    acciones.append(editar, eliminar);
-    tr.appendChild(acciones);
+      tr.appendChild(acciones);
+    }
+
     tbody.appendChild(tr);
   }
 }
@@ -333,4 +348,218 @@ function programarBusqueda() {
 document.querySelector("#f-nombre").addEventListener("input", programarBusqueda);
 document.querySelector("#f-id").addEventListener("input", programarBusqueda);
 
-document.addEventListener("DOMContentLoaded", cargarProductos);
+
+
+// ---- Acceso y sesion ----
+const vistaAcceso = document.querySelector("#vista-acceso");
+const formAcceso = document.querySelector("#form-acceso");
+const tituloAcceso = document.querySelector("#titulo-acceso");
+const inAEmail = document.querySelector("#a-email");
+const inAPassword = document.querySelector("#a-password");
+const errAEmail = document.querySelector("#err-a-email");
+const errAPassword = document.querySelector("#err-a-password");
+const btnAcceso = document.querySelector("#btn-acceso");
+const btnCambiarModo = document.querySelector("#btn-cambiar-modo");
+
+const zonaUsuario = document.querySelector("#zona-usuario");
+const usuarioEmail = document.querySelector("#usuario-email");
+const usuarioRol = document.querySelector("#usuario-rol");
+const vistaApp = document.querySelector("#vista-app");
+const seccionForm = document.querySelector("#seccion-form");
+const thAcciones = document.querySelector("#th-acciones");
+const seccionUsuarios = document.querySelector("#seccion-usuarios");
+
+let modoRegistro = false;
+
+function cambiarModoAcceso(registro) {
+  modoRegistro = registro;
+  tituloAcceso.textContent = registro ? "Crear cuenta" : "Iniciar sesión";
+  btnAcceso.textContent = registro ? "Registrarme" : "Entrar";
+  btnCambiarModo.textContent = registro
+    ? "Ya tengo cuenta"
+    : "Crear una cuenta";
+
+  inAPassword.autocomplete = registro
+    ? "new-password"
+    : "current-password";
+
+  errAEmail.textContent = "";
+  errAPassword.textContent = "";
+  inAEmail.classList.remove("invalido");
+  inAPassword.classList.remove("invalido");
+}
+
+btnCambiarModo.addEventListener("click", () => {
+  cambiarModoAcceso(!modoRegistro);
+});
+
+function validarAcceso() {
+  let valido = true;
+
+  errAEmail.textContent = "";
+  errAPassword.textContent = "";
+  inAEmail.classList.remove("invalido");
+  inAPassword.classList.remove("invalido");
+
+  const email = inAEmail.value.trim();
+
+  if (
+    email === "" ||
+    email.length > 100 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  ) {
+    errAEmail.textContent = "Ingresá un email válido";
+    inAEmail.classList.add("invalido");
+    valido = false;
+  }
+
+  const password = inAPassword.value;
+
+  if (password === "") {
+    errAPassword.textContent = "La contraseña es obligatoria";
+    inAPassword.classList.add("invalido");
+    valido = false;
+  } else if (modoRegistro && password.length < 8) {
+    errAPassword.textContent = "Mínimo 8 caracteres";
+    inAPassword.classList.add("invalido");
+    valido = false;
+  } else if (modoRegistro && password.length > 72) {
+    errAPassword.textContent = "Máximo 72 caracteres";
+    inAPassword.classList.add("invalido");
+    valido = false;
+  }
+
+  return valido;
+}
+
+formAcceso.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  if (!validarAcceso()) return;
+
+  const credenciales = {
+    email: inAEmail.value.trim(),
+    password: inAPassword.value
+  };
+
+  btnAcceso.disabled = true;
+
+  try {
+    if (modoRegistro) {
+      await apiRegistro(credenciales);
+      mostrarMensaje("Cuenta creada correctamente");
+    }
+
+    const datos = await apiLogin(credenciales);
+    guardarSesion(datos);
+    formAcceso.reset();
+    cambiarModoAcceso(false);
+    aplicarSesion();
+    mostrarMensaje("Bienvenido, " + datos.usuario.email);
+  } catch (error) {
+    mostrarMensaje(error.message, true);
+  } finally {
+    btnAcceso.disabled = false;
+  }
+});
+
+document.querySelector("#btn-logout").addEventListener("click", async () => {
+  try {
+    await apiLogout();
+  } catch (error) {
+    // Aunque falle la peticion, cerramos en este navegador.
+  }
+
+  cerrarSesionLocal();
+  aplicarSesion();
+  mostrarMensaje("Sesión cerrada");
+});
+
+function aplicarSesion() {
+  const usuario = obtenerUsuario();
+  const conSesion = usuario !== null;
+
+  vistaAcceso.hidden = conSesion;
+  vistaApp.hidden = !conSesion;
+  zonaUsuario.hidden = !conSesion;
+
+  if (!conSesion) {
+    clearTimeout(temporizadorBusqueda);
+    limpiarFormulario();
+    formFiltros.reset();
+    tbody.innerHTML = "";
+    contador.textContent = "0";
+    return;
+  }
+
+  usuarioEmail.textContent = usuario.email;
+  usuarioRol.textContent = usuario.rol;
+  usuarioRol.dataset.rol = usuario.rol;
+
+  seccionForm.hidden = !puede("editar");
+  thAcciones.hidden = !(puede("editar") || puede("eliminar"));
+
+  // El panel se conecta en el siguiente paso.
+  seccionUsuarios.hidden = !puede("usuarios");
+  if (puede("usuarios")) cargarUsuarios();
+
+  cargarProductos();
+}
+
+window.addEventListener("sesion-vencida", aplicarSesion);
+document.addEventListener("DOMContentLoaded", aplicarSesion);
+// ---- Usuarios y roles: solo administrador ----
+const usuariosBody = document.querySelector("#usuarios-body");
+const contadorUsuarios = document.querySelector("#contador-usuarios");
+
+function dibujarUsuarios(usuarios) {
+  usuariosBody.innerHTML = "";
+  contadorUsuarios.textContent = usuarios.length;
+
+  const yo = obtenerUsuario();
+
+  for (const u of usuarios) {
+    const tr = document.createElement("tr");
+    tr.appendChild(crearCelda(u.id));
+    tr.appendChild(crearCelda(u.email));
+
+    const select = document.createElement("select");
+
+    for (const rol of ROLES) {
+      const opcion = document.createElement("option");
+      opcion.value = rol;
+      opcion.textContent = rol;
+      select.appendChild(opcion);
+    }
+
+    select.value = u.rol;
+    select.disabled = yo !== null && Number(u.id) === Number(yo.id);
+
+    select.addEventListener("change", () => {
+      cambiarRol(u, select.value);
+    });
+
+    const td = document.createElement("td");
+    td.appendChild(select);
+    tr.appendChild(td);
+    usuariosBody.appendChild(tr);
+  }
+}
+
+async function cargarUsuarios() {
+  try {
+    dibujarUsuarios(await apiListarUsuarios());
+  } catch (error) {
+    mostrarMensaje(error.message, true);
+  }
+}
+
+async function cambiarRol(usuario, rolNuevo) {
+  try {
+    await apiCambiarRol(usuario.id, rolNuevo);
+    mostrarMensaje("Rol de " + usuario.email + ": " + rolNuevo);
+  } catch (error) {
+    mostrarMensaje(error.message, true);
+  }
+
+  await cargarUsuarios();
+}

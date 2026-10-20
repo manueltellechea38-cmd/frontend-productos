@@ -1,5 +1,6 @@
-﻿{
+{
   "liveServer.settings.host": "127.0.0.1",
   "liveServer.settings.port": 5501,
-  "liveServer.settings.root": "/"
+  "liveServer.settings.root": "/",
+  "terminal.integrated.stickyScroll.enabled": false
 }
